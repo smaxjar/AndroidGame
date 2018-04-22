@@ -11,17 +11,13 @@ import android.graphics.RectF;
 
 public class PlayerShip {
     RectF rect;
+
     private Bitmap bitmap;
     private float length;
     private float height;
 
-    // X is the far left of the rectangle which forms our ship
     private float x;
-
-    // Y is the top coordinate
     private float y;
-
-    // This will hold the pixels per second speed that the ship will move
     private float shipSpeed;
 
     public final int STOPPED = 0;
@@ -34,19 +30,21 @@ public class PlayerShip {
         rect = new RectF();
         length = screenX/10;
         height = screenY/10;
+
+        // ship spawn
         x = screenX / 2;
         y = screenY - 20;
 
         bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.playership);
+
         bitmap = Bitmap.createScaledBitmap(bitmap,
                 (int) (length),
                 (int) (height),
                 false);
 
+        // speed per second
         shipSpeed = 350;
     }
-
-
 
     public RectF getRect(){
         return rect;
@@ -64,14 +62,10 @@ public class PlayerShip {
         return length;
     }
 
-    public float getSpeed() {
-        return shipSpeed;
-    }
-
     public void setMovementState(int state){
         shipMoving = state;
     }
-    //UPDATE FUNCTION
+
     public void update(long fps){
         if(shipMoving == LEFT){
             x = x - shipSpeed / fps;
@@ -81,12 +75,10 @@ public class PlayerShip {
             x = x + shipSpeed / fps;
         }
 
-        // Update rect which is used to detect hits
+        // Collider
         rect.top = y;
         rect.bottom = y + height;
         rect.left = x;
         rect.right = x + length;
-
     }
-
 }
