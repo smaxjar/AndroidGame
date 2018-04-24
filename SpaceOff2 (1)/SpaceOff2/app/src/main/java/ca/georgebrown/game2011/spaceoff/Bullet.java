@@ -1,5 +1,6 @@
 package ca.georgebrown.game2011.spaceoff;
 
+import android.graphics.Rect;
 import android.graphics.RectF;
 
 /**
@@ -12,6 +13,8 @@ public class Bullet {
 
     private RectF rect;
 
+    private int RectX;
+    private int RectY;
 
     public final int UP = 0;
 
@@ -25,12 +28,16 @@ public class Bullet {
 
     private boolean isActive;
 
+    private Rect detectCollision;
+
     public Bullet(int screenY) {
 
         height = screenY / 20;
         isActive = false;
 
         rect = new RectF();
+
+        detectCollision =  new Rect(RectX, RectY, width, height);
     }
 
     public RectF getRect(){
@@ -77,5 +84,13 @@ public class Bullet {
         rect.top = y;
         rect.bottom = y + height;
 
+        detectCollision.left = RectX;
+        detectCollision.top = RectY;
+        detectCollision.right = RectX + width;
+        detectCollision.bottom = RectY + height;
+    }
+
+    public Rect getDetectCollision() {
+        return detectCollision;
     }
 }

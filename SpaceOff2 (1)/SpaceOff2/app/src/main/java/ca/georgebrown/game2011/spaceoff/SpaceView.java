@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.media.AudioManager;
 import android.media.SoundPool;
@@ -73,11 +74,16 @@ public class SpaceView extends SurfaceView implements Runnable{
         private float y;
         private float shipSpeed;
 
+        private int RectX;
+        private int RectY;
+
         public final int STOPPED = 0;
         public final int LEFT = 1;
         public final int RIGHT = 2;
 
         private int shipMoving = STOPPED;
+
+        private Rect detectCollision;
 
         public PlayerShip(Context context, int screenX, int screenY){
             rect = new RectF();
@@ -88,6 +94,9 @@ public class SpaceView extends SurfaceView implements Runnable{
             x = screenX / 2;
             y = screenY - 20;
 
+            RectX = screenX /2;
+            RectY = screenY - 20;
+
             bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.playership);
 
             bitmap = Bitmap.createScaledBitmap(bitmap,
@@ -97,6 +106,8 @@ public class SpaceView extends SurfaceView implements Runnable{
 
             // speed per second
             shipSpeed = 350;
+
+            detectCollision =  new Rect(RectX, RectY, bitmap.getWidth(), bitmap.getHeight());
         }
 
         public RectF getRect(){
@@ -128,11 +139,14 @@ public class SpaceView extends SurfaceView implements Runnable{
                 x = x + shipSpeed / fps;
             }
 
-            // Collider
-            rect.top = y;
-            rect.bottom = y + height;
-            rect.left = x;
-            rect.right = x + length;
+            detectCollision.left = RectX;
+            detectCollision.top = RectY;
+            detectCollision.right = RectX + bitmap.getWidth();
+            detectCollision.bottom = RectY + bitmap.getHeight();
+        }
+
+        public Rect getDetectCollision() {
+            return detectCollision;
         }
     }
 
@@ -150,6 +164,8 @@ public class SpaceView extends SurfaceView implements Runnable{
         private int maxY;
         private int minY;
 
+        private Rect detectCollision;
+
         public Asteroid(Context context, int screenX, int screenY) {
             bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.meteor);
 
@@ -163,6 +179,8 @@ public class SpaceView extends SurfaceView implements Runnable{
 
             x = generator.nextInt(maxX) - bitmap.getWidth();
             y = 0;
+
+            detectCollision = new Rect(x, y, bitmap.getWidth(), bitmap.getHeight());
         }
 
         public void update(long playerSpeed) {
@@ -175,6 +193,19 @@ public class SpaceView extends SurfaceView implements Runnable{
                 x = generator.nextInt(maxX) - bitmap.getWidth();
                 y = 0;
             }
+
+            detectCollision.left = x;
+            detectCollision.top = y;
+            detectCollision.right = x + bitmap.getWidth();
+            detectCollision.bottom = y + bitmap.getHeight();
+        }
+
+        public void setX(int x){
+            this.x = x;
+        }
+
+        public Rect getDetectCollision() {
+            return detectCollision;
         }
 
         public Bitmap getBitmap() {
@@ -191,6 +222,100 @@ public class SpaceView extends SurfaceView implements Runnable{
 
         public int getSpeed() {
             return speed;
+        }
+    }
+
+    public class Bullet {
+        private float x;
+        private float y;
+
+        private RectF rect;
+        private Rect detectCollision;
+
+        private int RectX;
+        private int RectY;
+
+        public final int UP = 0;
+
+        // Going nowhere
+        int heading = -1;
+        float speed =  350;
+
+        private int width = 3;
+        private int height = 5;
+
+        private boolean isActive;
+
+
+        public Bullet(int screenY) {
+
+            height = screenY / 20;
+            isActive = false;
+
+            rect = new RectF();
+
+            RectX = (int)x;
+            RectY = (int)y;
+
+            detectCollision =  new Rect(RectX, RectY, width, height);
+        }
+
+        public RectF getRect(){
+            return rect;
+        }
+
+        public Rect getDetectCollision() {
+            return detectCollision;
+        }
+
+        public boolean getStatus(){
+            return isActive;
+        }
+
+        public void setInactive(){
+            isActive = false;
+        }
+
+        public void setX(int x){
+            this.x = x;
+        }
+
+        public float getImpactPointY(){
+            return  y;
+        }
+
+        public boolean shoot(float startX, float startY, int direction) {
+            if (!isActive) {
+                x = startX;
+                y = startY;
+                heading = direction;
+                isActive = true;
+                return true;
+            }
+
+            // Bullet already active
+            return false;
+        }
+
+        public void update(long fps){
+
+            // Just move up or down
+            if(heading == UP){
+                y = y - speed / fps;
+            }else{
+                y = y + speed / fps;
+            }
+
+            // Update rect
+            rect.left = x;
+            rect.right = x + width;
+            rect.top = y;
+            rect.bottom = y + height;
+
+            detectCollision.left = RectX;
+            detectCollision.top = RectY;
+            detectCollision.right = RectX + width;
+            detectCollision.bottom = RectY + height;
         }
     }
 
@@ -256,9 +381,24 @@ public class SpaceView extends SurfaceView implements Runnable{
             bullet.setInactive();
         }
 
+        if (lives == 0) {
+            lives = 3;
+            score = 0;
+        }
         //updating the enemy coordinate with respect to player speed
-        for(int i=0; i<numAsteroids; i++){
+        for(int i = 0; i<numAsteroids; i++){
             asteroids[i].update(1);
+
+            if (Rect.intersects(playerShip.getDetectCollision(), asteroids[i].getDetectCollision())) {
+                asteroids[i].setX(-9999);
+                lives--;
+            }
+
+            if (Rect.intersects(bullet.getDetectCollision(), asteroids[i].getDetectCollision())) {
+                asteroids[i].setX(-9999);
+                bullet.setX(-9999);
+                score++;
+            }
         }
     }
 
